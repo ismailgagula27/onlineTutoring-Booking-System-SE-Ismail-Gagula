@@ -2,29 +2,46 @@
 
 header("Content-Type: application/json");
 
+require_once "services/BookingService.php";
+
 $file = "sessions.json";
 
-// GET - vrati sve sesije
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    echo file_get_contents($file);
+    if (file_exists($file)) {
+        echo file_get_contents($file);
+    } else {
+        echo json_encode([]);
+    }
     exit;
 }
 
-// POST - dodaj novu sesiju
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    
     $data = json_decode(file_get_contents("php://input"), true);
 
-    $sessions = json_decode(file_get_contents($file), true);
+    
+    if (!isset($data["student"]) || !isset($data["time"]) || !isset($data["payment"])) {
+        echo json_encode(["error" => "Missing data"]);
+        exit;
+    }
 
-    $newSession = [
-        "id" => uniqid(),
-        "student" => $data["student"],
-        "time" => $data["time"]
-    ];
+    
+    $bookingService = new BookingService();
 
-    $sessions[] = $newSession;
+    $result = $bookingService->book(
+        $data["student"],
+        $data["time"],
+        $data["payment"]
+    );
 
-    file_put_contents($file, json_encode($sessions));
-
-    echo json_encode($newSession);
+    echo json_encode($result);
+    exit;
 }
+
+
+echo json_encode(["error" => "Invalid request method"]);
